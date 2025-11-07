@@ -1,1 +1,7 @@
 export const getUser = () => {};
+
+export const signup = () => {};
+
+export const login = () => {};
+
+export const logout = () => {};
