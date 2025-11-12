@@ -1,7 +1,6 @@
-import db from "../db/db.js";
 import dotenv from "dotenv";
-import { createTokens } from "../utils/createTokens.js";
 import jwt from "jsonwebtoken";
+<<<<<<< Updated upstream
 dotenv.config();
 
 // Louie
@@ -14,6 +13,64 @@ export const createUser = (
 ) => {
   if (mfatoken !== process.env.MFA_TOKEN) {
     throw new Error("Invalid MFA token");
+=======
+import db from "../db/db.js";
+import { createTokens } from "../utils/createTokens.js";
+import bcrypt from "bcryptjs";
+dotenv.config();
+
+// Louie
+export const createUser = async (req, res) => {
+  // if (mfatoken !== process.env.MFA_TOKEN) {
+  //   throw new Error("Invalid MFA token");
+  // }
+  try {
+    // turn request body into variables
+    const { username, password, phoneNumber } = req.body;
+
+    // check if the username is there
+    const stmt = db.prepare("SELECT * FROM users WHERE username = ?");
+
+    const currentUser = stmt.get(username);
+
+    if (currentUser) {
+      return res.status(400).json({ message: "Username already in use." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const mfaToken = Math.floor(100000 + Math.random() * 900000);
+
+    // make new user
+    const stmt2 = db.prepare(
+      "INSERT INTO users (username, password, phoneNumber, mfaToken) VALUES (?,?,?,?)"
+    );
+
+    const info = stmt2.run(username, hashedPassword, phoneNumber, mfaToken);
+
+    const userId = info.lastInsertRowid;
+
+    const { accessToken, refreshToken } = createTokens({ userId });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false, //for dev = false, for production = true
+      sameSite: "Strict", // will only send to the same site that requested it
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.status(201).json({
+      accessToken,
+      user: {
+        userId,
+        phoneNumber,
+        mfaToken,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ error: "Invalid request" });
+>>>>>>> Stashed changes
   }
 };
 
@@ -51,7 +108,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: "Invalid credentials" });
     }
     // we want to compare the password if it is correct
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = bcrypt.compare(password, 10, user.password);
     if (!passwordMatch) {
       return res.status(400).json({ error: "Invalid credentials" });
     }
