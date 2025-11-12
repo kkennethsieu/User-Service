@@ -27,13 +27,12 @@ export const checkAuth = (req, res, next) => {
   }
 };
 
-
 //EXAMPLE OF A BACKEND ROUTE
 
 app.post("/reviews", checkAuth, getReviews){
 }
 
-app.post("/reviews", checkAuth, (req, res) => {
+app.get("/reviews", checkAuth, (req, res) => {
   // you can access the userId from the middleware
   // we set the userId when we verified in the middleware
   const userId = req.userId;

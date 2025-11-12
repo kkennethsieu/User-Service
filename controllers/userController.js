@@ -1,14 +1,83 @@
-import db from "../db/db.js";
 import dotenv from "dotenv";
-import { createTokens } from "../utils/createTokens.js";
 import jwt from "jsonwebtoken";
-import { createUser, updateUser, getUserById } from "../models/userModel.js";
+import db from "../db/db.js";
+import { createTokens } from "../utils/createTokens.js";
+import bcrypt from "bcryptjs";
 dotenv.config();
 
 // Louie
-export const createUser = async ( mfatoken, req, res ) => {
-  if (mfatoken !== process.env.MFA_TOKEN) {
-    throw new Error("Invalid MFA token");
+export const createUser = async (req, res) => {
+  try {
+    // turn request body into variables
+    const { username, password, phoneNumber } = req.body;
+
+    // check if the username is there
+    const stmt = db.prepare("SELECT * FROM users WHERE username = ?");
+
+    const currentUser = stmt.get(username);
+
+    if (currentUser) {
+      return res.status(400).json({ message: "Username already in use." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const mfaToken = Math.floor(100000 + Math.random() * 900000);
+
+    // make new user
+    const stmt2 = db.prepare(
+      "INSERT INTO users (username, password, phoneNumber, mfaToken) VALUES (?,?,?,?)"
+    );
+
+    const info = stmt2.run(username, hashedPassword, phoneNumber, mfaToken);
+
+    const userId = info.lastInsertRowid;
+
+    const { accessToken, refreshToken } = createTokens({ userId });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false, //for dev = false, for production = true
+      sameSite: "Strict", // will only send to the same site that requested it
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.status(201).json({
+      accessToken,
+      user: {
+        userId,
+        phoneNumber,
+        mfaToken,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ error: "Invalid request" });
+  }
+};
+
+// MFA Check needs to receive
+export const MFACheck = async (req, res) => {
+  const userVal = req.body.mfaInput;
+  const realToken = req.body.mfaToken;
+
+  try {
+    const row = db
+      .prepare("SELECT 1 FROM Users WHERE mfaToken = ? LIMIT 1")
+      .get(userVal);
+    if (row) {
+      console.log("MFA verified");
+      db.prepare("UPDATE users SET mfaToken = NULL WHERE mfaToken = ?").run(
+        userVal
+      );
+      res.status(201).json({ message: "MFA Verified" });
+    } else {
+      console.log("MFA failed, deleting user");
+      db.prepare("DELETE FROM users WHERE mfaToken = ?").run(realToken);
+      res.status(400).json({ error: "MFA Failed" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: "Invalid request" });
   }
   try {
     // turn request body into variables
@@ -25,12 +94,12 @@ export const createUser = async ( mfatoken, req, res ) => {
 };
 
 export const getUser = async (req, res) => {
-  const params = req.query;
-  console.log("Received params:", req);
-  const userId = params.userId;
+  const userId = req.params.userId;
 
   try {
-    const stmt = db.prepare("SELECT * FROM users WHERE userId = ?");
+    const stmt = db.prepare(
+      "SELECT username, avatarURL, phoneNumber, userBio FROM users WHERE userId = ?"
+    );
     console.log("Fetching user with ID:", userId);
     await res.json(stmt.get(userId));
   } catch (err) {
@@ -41,10 +110,6 @@ export const getUser = async (req, res) => {
 
 // Will
 export const updateUser = (userId, newDetails) => {};
-
-const profilVerify = (profile) => {
-  return profile.bio && profile.favGame && profile.urlPic;
-};
 
 // Kenneth
 export const login = async (req, res) => {
@@ -58,7 +123,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: "Invalid credentials" });
     }
     // we want to compare the password if it is correct
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(400).json({ error: "Invalid credentials" });
     }
@@ -121,7 +186,7 @@ export const refreshToken = async (req, res) => {
 // Kenneth
 export const logout = (req, res) => {
   // reset the cookie to nothing
-  res.cookie("refreshToken", "", {
+  res.cookie("refreshToken", " ", {
     httpOnly: true,
     secure: false,
     sameSite: "Strict",
