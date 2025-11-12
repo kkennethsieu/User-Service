@@ -7,9 +7,6 @@ dotenv.config();
 
 // Louie
 export const createUser = async (req, res) => {
-  // if (mfatoken !== process.env.MFA_TOKEN) {
-  //   throw new Error("Invalid MFA token");
-  // }
   try {
     // turn request body into variables
     const { username, password, phoneNumber } = req.body;
@@ -59,31 +56,38 @@ export const createUser = async (req, res) => {
   }
 };
 
-// MFA Check needs to receive 
+// MFA Check needs to receive
 export const MFACheck = async (req, res) => {
-  const userVal = req.body;
+  const userVal = req.body.mfaInput;
+  const realToken = req.body.mfaToken;
 
   try {
-    const row = db.prepare('SELECT 1 FROM Users WHERE mfaToken = ? LIMIT 1').get(userVal);
+    const row = db
+      .prepare("SELECT 1 FROM Users WHERE mfaToken = ? LIMIT 1")
+      .get(userVal);
     if (row) {
       console.log("MFA verified");
-      db.prepare("UPDATE users SET mfaToken = NULL WHERE mfaToken = ?").run(userVal);
+      db.prepare("UPDATE users SET mfaToken = NULL WHERE mfaToken = ?").run(
+        userVal
+      );
+      res.status(201).json({ message: "MFA Verified" });
     } else {
       console.log("MFA failed, deleting user");
-      db.prepare("DELETE FROM users WHERE mfaToken = ?").run(userVal);
+      db.prepare("DELETE FROM users WHERE mfaToken = ?").run(realToken);
+      res.status(400).json({ error: "MFA Failed" });
     }
-  } catch(error) {
-    res.status(400).json({ error: "Invalid request"})
+  } catch (error) {
+    res.status(400).json({ error: "Invalid request" });
   }
-}
+};
 
 export const getUser = async (req, res) => {
-  const params = req.query;
-  console.log("Received params:", req);
-  const userId = params.userId;
+  const userId = req.params.userId;
 
   try {
-    const stmt = db.prepare("SELECT * FROM users WHERE userId = ?");
+    const stmt = db.prepare(
+      "SELECT username, avatarURL, phoneNumber, userBio FROM users WHERE userId = ?"
+    );
     console.log("Fetching user with ID:", userId);
     await res.json(stmt.get(userId));
   } catch (err) {
@@ -107,7 +111,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: "Invalid credentials" });
     }
     // we want to compare the password if it is correct
-    const passwordMatch = bcrypt.compare(password, 10, user.password);
+    const passwordMatch = bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(400).json({ error: "Invalid credentials" });
     }
@@ -168,9 +172,9 @@ export const refreshToken = async (req, res) => {
 };
 
 // Kenneth
-export const logout = (res) => {
+export const logout = (req, res) => {
   // reset the cookie to nothing
-  res.cookie("refreshToken", "", {
+  res.cookie("refreshToken", " ", {
     httpOnly: true,
     secure: false,
     sameSite: "Strict",
