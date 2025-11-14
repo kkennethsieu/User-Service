@@ -6,6 +6,7 @@ import {
   logout,
   refreshToken,
   MFACheck,
+  updateUser,
 } from "../controllers/userController.js";
 
 const router = express.Router();
@@ -13,6 +14,8 @@ const router = express.Router();
 router.get("/user/:userId", getUser);
 
 router.post("/createUser", createUser);
+
+router.put("/updateUser/:userId", updateUser);
 
 router.post("/login", login);
 

@@ -1,0 +1,8 @@
+# Set variables for the PUT request
+$user_id = 2
+$uri = "http://localhost:3000/updateUser/$user_id"
+$body_json = '{"username": "PowerShell_Tester", "avatarURL": "https://placehold.co/100x100/10b981/ffffff?text=PS", "phoneNumber": "555-123-4567", "userBio": "Updated via PowerShell Invoke-RestMethod."}'
+$headers = @{ "Content-Type" = "application/json" }
+
+# Execute the PUT request using Invoke-RestMethod
+Invoke-RestMethod -Uri $uri -Method PUT -Headers $headers -Body $body_json

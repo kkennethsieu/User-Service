@@ -97,7 +97,20 @@ export const getUser = async (req, res) => {
 };
 
 // Will
-export const updateUser = (userId, newDetails) => {};
+export const updateUser = async (req, res) => {
+  const userId = req.params.userId;
+  const { username, avatarURL, phoneNumber, userBio } = req.body;
+  try {
+    const stmt = db.prepare(
+      "UPDATE users SET username = ?, avatarURL = ?, phoneNumber = ?, userBio = ? WHERE userId = ?"
+    );
+    stmt.run(username, avatarURL, phoneNumber, userBio, userId);
+    return { message: "User updated successfully" };
+  } catch (err) {
+    console.error(err);
+    return res.status(400).json({ error: "Failed to update user" });
+  }
+};
 
 // Kenneth
 export const login = async (req, res) => {
