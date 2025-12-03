@@ -1,10 +1,8 @@
-# User Service - Communication Contract
-
 ## Overview
 
 The User Service is a RESTful API microservice that handles user authentication, authorization, and user profile management. It uses JWT (JSON Web Tokens) for authentication with access and refresh token mechanisms, and includes multi-factor authentication (MFA) support via phone number verification.
 
-**Base URL**: `http://localhost:3000`
+**Base URL**: `http://localhost:3001`
 
 ## Running the Service
 
@@ -19,7 +17,7 @@ npm run dev
 node index.js
 ```
 
-The service will start on `http://localhost:3000` by default.
+The service will start on `http://localhost:3001` by default.
 
 ---
 
@@ -44,7 +42,7 @@ The service will start on `http://localhost:3000` by default.
 **Example Request**:
 
 ```javascript
-const response = await fetch("http://localhost:3000/auth/createUser", {
+const response = await fetch("http://localhost:3001/auth/createUser", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -107,7 +105,7 @@ console.log(data);
 **Example Request**:
 
 ```javascript
-const response = await fetch("http://localhost:3000/auth/MFA-check", {
+const response = await fetch("http://localhost:3001/auth/MFA-check", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -160,7 +158,7 @@ console.log(data);
 **Example Request**:
 
 ```javascript
-const response = await fetch("http://localhost:3000/auth/login", {
+const response = await fetch("http://localhost:3001/auth/login", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -220,7 +218,7 @@ console.log(data);
 **Example Request**:
 
 ```javascript
-const response = await fetch("http://localhost:3000/auth/logout", {
+const response = await fetch("http://localhost:3001/auth/logout", {
   method: "POST",
   credentials: "include", // Important: include cookies
 });
@@ -248,7 +246,7 @@ console.log(data);
 **Example Request**:
 
 ```javascript
-const response = await fetch("http://localhost:3000/auth/refresh-token", {
+const response = await fetch("http://localhost:3001/auth/refresh-token", {
   method: "POST",
   credentials: "include", // Important: include cookies to send refreshToken
 });
@@ -298,7 +296,7 @@ or
 **Example Request**:
 
 ```javascript
-const response = await fetch("http://localhost:3000/auth/user/1");
+const response = await fetch("http://localhost:3001/auth/user/1");
 const userData = await response.json();
 console.log(userData);
 ```
@@ -348,7 +346,7 @@ console.log(userData);
 **Example Request**:
 
 ```javascript
-const response = await fetch("http://localhost:3000/auth/updateUser/1", {
+const response = await fetch("http://localhost:3001/auth/updateUser/1", {
   method: "PUT",
   headers: {
     "Content-Type": "application/json",
@@ -391,7 +389,7 @@ console.log(data);
 
 ```javascript
 // 1. Create a new user
-const registerResponse = await fetch("http://localhost:3000/auth/createUser", {
+const registerResponse = await fetch("http://localhost:3001/auth/createUser", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   credentials: "include",
@@ -408,7 +406,7 @@ const registerData = await registerResponse.json();
 // Client Side
 
 // 3. User enters MFA code, verify it
-const mfaResponse = await fetch("http://localhost:3000/auth/MFA-check", {
+const mfaResponse = await fetch("http://localhost:3001/auth/MFA-check", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -424,7 +422,7 @@ const accessToken = registerData.accessToken;
 **Step 2: Login for Existing Users**
 
 ```javascript
-const loginResponse = await fetch("http://localhost:3000/auth/login", {
+const loginResponse = await fetch("http://localhost:3001/auth/login", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   credentials: "include", // REQUIRED: allows cookies to be sent/received
@@ -456,7 +454,7 @@ const response = await fetch("http://localhost:5000/protected-route", {
 if (response.status === 401) {
   // Get new access token
   const refreshResponse = await fetch(
-    "http://localhost:3000/auth/refresh-token",
+    "http://localhost:3001/auth/refresh-token",
     {
       method: "POST",
       credentials: "include",
@@ -479,7 +477,7 @@ if (response.status === 401) {
 **Step 4: Logout**
 
 ```javascript
-await fetch("http://localhost:3000/auth/logout", {
+await fetch("http://localhost:3001/auth/logout", {
   method: "POST",
   credentials: "include",
 });
@@ -515,7 +513,7 @@ The service uses HTTP-only cookies to store refresh tokens. These cookies:
 
 ```javascript
 // Login and handle response
-const response = await fetch("http://localhost:3000/auth/login", {
+const response = await fetch("http://localhost:3001/auth/login", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   credentials: "include",
@@ -557,7 +555,7 @@ async function fetchWithAuth(url, options = {}) {
   // If unauthorized, try refreshing the token
   if (response.status === 401) {
     const refreshResponse = await fetch(
-      "http://localhost:3000/auth/refresh-token",
+      "http://localhost:3001/auth/refresh-token",
       {
         method: "POST",
         credentials: "include",
@@ -645,7 +643,9 @@ REFRESH_TOKEN_SECRET=your-secret-key-for-refresh-tokens
 - Use the same `ACCESS_TOKEN_SECRET` across all microservices that need to verify tokens
 
 ---
+
 ## UML Diagram (createUser endpoint)
+
 ![UML Diagram](./images/UML-createUser.png)
 This diagram shows the gist of how the createUser endpoint works. It requires the user to supply their intended username, their password (will be hashed when it hits the database), and their phone number.
 Once the user is created, MFA check triggers, sending a randomly generated MFA token, the user's phoneNumber, and their userId to the client. If the user inputs the MFA token correctly, user row stays, else delete.
